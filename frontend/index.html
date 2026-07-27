@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Coding Platform</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; background: #f5f7fb; color: #1f2937; }
+    .container { max-width: 1100px; margin: 0 auto; padding: 24px; }
+    .card { background: white; border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0,0,0,.06); }
+    h1, h2 { margin-top: 0; }
+    .row { display: flex; gap: 16px; flex-wrap: wrap; }
+    .col { flex: 1; min-width: 280px; }
+    label { display: block; margin-bottom: 6px; font-weight: 600; }
+    input, select, textarea, button { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid #d1d5db; font-size: 14px; }
+    textarea { min-height: 220px; font-family: Consolas, monospace; }
+    button { background: #2563eb; color: white; cursor: pointer; border: none; }
+    button.secondary { background: #10b981; }
+    .output { white-space: pre-wrap; background: #111827; color: #f9fafb; padding: 12px; border-radius: 8px; min-height: 100px; }
+    .problem-list { display: grid; gap: 8px; }
+    .problem { border: 1px solid #e5e7eb; padding: 10px; border-radius: 8px; }
+    .muted { color: #6b7280; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <h1>Coding Platform</h1>
+      <p class="muted">Run code, test sample input, and submit solutions to the backend API.</p>
+    </div>
+
+    <div class="card">
+      <h2>Start a Test Session</h2>
+      <button onclick="startTest()">Start Test</button>
+      <div id="sessionInfo" class="muted" style="margin-top: 10px;"></div>
+    </div>
+
+    <div class="card">
+      <h2>Problems</h2>
+      <div id="problemList" class="problem-list"></div>
+    </div>
+
+    <div class="card">
+      <div class="row">
+        <div class="col">
+          <label>Problem ID</label>
+          <input id="problemId" type="number" value="1" />
+        </div>
+        <div class="col">
+          <label>Language</label>
+          <select id="language">
+            <option value="python">Python</option>
+          </select>
+        </div>
+      </div>
+      <div class="row" style="margin-top: 12px;">
+        <div class="col">
+          <label>Code</label>
+          <textarea id="code">print('Write your code here')</textarea>
+        </div>
+        <div class="col">
+          <label>Input</label>
+          <textarea id="inputData"></textarea>
+        </div>
+      </div>
+      <div class="row" style="margin-top: 12px;">
+        <div class="col">
+          <button onclick="executeCode()">Run Code</button>
+        </div>
+        <div class="col">
+          <button class="secondary" onclick="submitCode()">Submit Code</button>
+        </div>
+      </div>
+      <h3 style="margin-top: 16px;">Output</h3>
+      <div id="output" class="output">No output yet.</div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = 'http://localhost:9000';
+
+    async function startTest() {
+      try {
+        const response = await fetch(`${API_BASE}/start-test`, { method: 'POST' });
+        const data = await response.json();
+        document.getElementById('sessionInfo').innerText = `Session created: ${data.session_id} (${data.total_questions} questions)`;
+        renderProblems(data.questions || []);
+      } catch (err) {
+        document.getElementById('sessionInfo').innerText = 'Failed to start test.';
+        console.error(err);
+      }
+    }
+
+    function renderProblems(problems) {
+      const container = document.getElementById('problemList');
+      if (!problems.length) {
+        container.innerHTML = '<div class="muted">No problems loaded.</div>';
+        return;
+      }
+      container.innerHTML = problems.map(p => `
+        <div class="problem">
+          <strong>#${p.id} ${p.title}</strong><br/>
+          <span class="muted">${p.description}</span><br/>
+          <span class="muted">Difficulty: ${p.difficulty}</span>
+        </div>
+      `).join('');
+    }
+
+    async function executeCode() {
+      const payload = {
+        language: document.getElementById('language').value,
+        code: document.getElementById('code').value,
+        input_data: document.getElementById('inputData').value,
+      };
+
+      try {
+        const response = await fetch(`${API_BASE}/execute`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        const data = await response.json();
+        document.getElementById('output').textContent = data.output || JSON.stringify(data, null, 2);
+      } catch (err) {
+        document.getElementById('output').textContent = 'Execution failed.';
+        console.error(err);
+      }
+    }
+
+    async function submitCode() {
+      const payload = {
+        problem_id: Number(document.getElementById('problemId').value),
+        language: document.getElementById('language').value,
+        code: document.getElementById('code').value,
+      };
+
+      try {
+        const response = await fetch(`${API_BASE}/submit`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        const data = await response.json();
+        document.getElementById('output').textContent = JSON.stringify(data, null, 2);
+      } catch (err) {
+        document.getElementById('output').textContent = 'Submission failed.';
+        console.error(err);
+      }
+    }
+  </script>
+</body>
+</html>

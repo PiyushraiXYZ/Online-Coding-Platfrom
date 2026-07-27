@@ -1,0 +1,44 @@
+services:
+
+  backend:
+    build: .
+
+    container_name: coding-platform
+
+    ports:
+      - "9000:8000"
+
+    environment:
+      DATABASE_URL: postgresql://admin:Piyushrai123@postgres:5432/coding_platform
+
+    volumes:
+      - .:/app
+      - submissions-data:/app/submissions
+      - submissions-data:/code
+      - /var/run/docker.sock:/var/run/docker.sock
+
+    depends_on:
+      - postgres
+
+    restart: always
+
+  postgres:
+    image: postgres:16
+
+    container_name: coding-platform-db
+
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: Piyushrai123
+      POSTGRES_DB: coding_platform
+
+    ports:
+      - "5432:5432"
+
+    restart: always
+
+volumes:
+  submissions-data:
+
+
+ 
